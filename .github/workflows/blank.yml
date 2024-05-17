@@ -1,0 +1,47 @@
+name: Maven Build and Deploy
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: develop
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Build with Maven
+      run: mvn clean install
+
+    - name: Install SSH client
+      run: sudo apt-get install -y openssh-client
+
+    - name: SSH to deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ 194.163.43.143 }}
+        username: ${{ ssh root@194.163.43.143 }}
+        password: ${{ Nambi@2023 }}
+        script: |
+          lsof -i:80 | awk 'NR>1 {print $2}' | xargs -r kill -9
+          cd /D:\Projects\Api\erpapplication\order\order-api\target
+          ./start-your-app.sh
